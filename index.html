@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鹈鹕骑单车</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #e8f9ff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px;
+  }
+  h1 { font-size: 2.4rem; color: #1a3a4a; margin-bottom: 6px; }
+  .caption { color: #5b7a8a; margin-bottom: 20px; }
+  .scene {
+    width: 100%;
+    max-width: 920px;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(26, 58, 74, .18);
+  }
+  svg { display: block; width: 100%; height: auto; }
+
+  /* ---- animations ---- */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .wheel, .crank {
+    animation: spin .9s linear infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  @keyframes pedal {
+    0%, 100% { transform: rotate(20deg); }
+    50%      { transform: rotate(-20deg); }
+  }
+  .leg {
+    animation: pedal .9s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: 50% 0%;
+  }
+  .leg.back { animation-delay: -.45s; }
+  @keyframes ride {
+    from { transform: translateX(-300px); }
+    to   { transform: translateX(1080px); }
+  }
+  .rider { animation: ride 9s linear infinite; }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+  .bob { animation: bob .9s ease-in-out infinite; }
+  @keyframes flap {
+    0%, 100% { transform: rotate(0deg); }
+    50%      { transform: rotate(-14deg); }
+  }
+  .wing {
+    animation: flap .9s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: 15% 50%;
+  }
+  @keyframes drift {
+    from { transform: translateX(-180px); }
+    to   { transform: translateX(1080px); }
+  }
+  .cloud { animation: drift linear infinite; }
+  @keyframes blink {
+    0%, 92%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(.1); }
+  }
+  .eye {
+    animation: blink 4s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+</style>
+</head>
+<body>
+  <h1>鹈鹕骑单车 🚲</h1>
+  <p class="caption">pi 罢工，Muse 顶班之作</p>
+
+  <div class="scene">
+  <svg viewBox="0 0 920 420" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#8ed4ff"/>
+        <stop offset="1" stop-color="#e8f9ff"/>
+      </linearGradient>
+    </defs>
+
+    <!-- sky -->
+    <rect x="0" y="0" width="920" height="340" fill="url(#sky)"/>
+
+    <!-- sun -->
+    <circle cx="110" cy="80" r="42" fill="#ffd93d" opacity=".9"/>
+    <circle cx="110" cy="80" r="58" fill="#ffd93d" opacity=".25"/>
+
+    <!-- clouds -->
+    <g class="cloud" style="animation-duration: 55s" opacity=".95" fill="#ffffff">
+      <ellipse cx="0" cy="70" rx="46" ry="20"/>
+      <ellipse cx="34" cy="62" rx="34" ry="18"/>
+      <ellipse cx="-32" cy="62" rx="28" ry="15"/>
+    </g>
+    <g class="cloud" style="animation-duration: 80s; animation-delay: -30s" opacity=".9" fill="#ffffff">
+      <ellipse cx="0" cy="130" rx="38" ry="16"/>
+      <ellipse cx="28" cy="124" rx="26" ry="14"/>
+    </g>
+    <g class="cloud" style="animation-duration: 65s; animation-delay: -55s" opacity=".85" fill="#ffffff">
+      <ellipse cx="0" cy="45" rx="30" ry="13"/>
+      <ellipse cx="24" cy="40" rx="22" ry="11"/>
+    </g>
+
+    <!-- ground -->
+    <rect x="0" y="338" width="920" height="82" fill="#8fd694"/>
+    <rect x="0" y="338" width="920" height="46" fill="#a7adb3"/>
+    <g fill="#f4f6f7">
+      <rect x="40"  y="357" width="46" height="8" rx="4"/>
+      <rect x="180" y="357" width="46" height="8" rx="4"/>
+      <rect x="320" y="357" width="46" height="8" rx="4"/>
+      <rect x="460" y="357" width="46" height="8" rx="4"/>
+      <rect x="600" y="357" width="46" height="8" rx="4"/>
+      <rect x="740" y="357" width="46" height="8" rx="4"/>
+      <rect x="880" y="357" width="46" height="8" rx="4"/>
+    </g>
+    <!-- grass tufts & flowers -->
+    <g stroke="#5da85f" stroke-width="3" stroke-linecap="round">
+      <path d="M120,400 l-6,-14 M120,400 l6,-14 M120,400 l0,-16" fill="none"/>
+      <path d="M520,405 l-6,-14 M520,405 l6,-14" fill="none"/>
+      <path d="M810,402 l-6,-14 M810,402 l6,-14 M810,402 l0,-16" fill="none"/>
+    </g>
+    <g>
+      <circle cx="250" cy="400" r="5" fill="#ff8fa3"/>
+      <circle cx="700" cy="406" r="5" fill="#ff8fa3"/>
+      <circle cx="430" cy="404" r="5" fill="#ffd93d"/>
+    </g>
+
+    <!-- ============ rider ============ -->
+    <g class="rider">
+      <!-- wheels -->
+      <g class="wheel">
+        <circle cx="0" cy="300" r="38" fill="none" stroke="#2b2b2b" stroke-width="9"/>
+        <g stroke="#9aa0a6" stroke-width="2.5">
+          <line x1="0" y1="268" x2="0" y2="332"/>
+          <line x1="-28" y1="284" x2="28" y2="316"/>
+          <line x1="28" y1="284" x2="-28" y2="316"/>
+        </g>
+        <circle cx="0" cy="300" r="6" fill="#555"/>
+      </g>
+      <g class="wheel">
+        <circle cx="150" cy="300" r="38" fill="none" stroke="#2b2b2b" stroke-width="9"/>
+        <g stroke="#9aa0a6" stroke-width="2.5">
+          <line x1="150" y1="268" x2="150" y2="332"/>
+          <line x1="122" y1="284" x2="178" y2="316"/>
+          <line x1="178" y1="284" x2="122" y2="316"/>
+        </g>
+        <circle cx="150" cy="300" r="6" fill="#555"/>
+      </g>
+
+      <!-- frame -->
+      <g stroke="#e63946" stroke-width="7" stroke-linecap="round" fill="none">
+        <line x1="0" y1="300" x2="75" y2="305"/>
+        <line x1="75" y1="305" x2="150" y2="300"/>
+        <line x1="0" y1="300" x2="48" y2="226"/>
+        <line x1="48" y1="226" x2="75" y2="305"/>
+        <line x1="150" y1="300" x2="150" y2="238"/>
+      </g>
+      <!-- seat -->
+      <rect x="34" y="214" width="30" height="10" rx="5" fill="#6b4a2f"/>
+      <line x1="48" y1="224" x2="48" y2="226" stroke="#6b4a2f" stroke-width="6"/>
+      <!-- handlebar -->
+      <line x1="150" y1="238" x2="150" y2="222" stroke="#2b2b2b" stroke-width="6" stroke-linecap="round"/>
+      <line x1="150" y1="222" x2="136" y2="222" stroke="#2b2b2b" stroke-width="6" stroke-linecap="round"/>
+
+      <!-- crank + pedals -->
+      <g class="crank">
+        <line x1="59" y1="305" x2="91" y2="305" stroke="#2b2b2b" stroke-width="6" stroke-linecap="round"/>
+        <rect x="50" y="300" width="18" height="9" rx="3" fill="#2b2b2b"/>
+        <rect x="82" y="300" width="18" height="9" rx="3" fill="#2b2b2b"/>
+      </g>
+      <circle cx="75" cy="305" r="7" fill="#555"/>
+
+      <!-- pelican -->
+      <g class="bob">
+        <!-- legs -->
+        <g class="leg back" transform="translate(60,208)">
+          <path d="M0,0 C-2,28 -8,58 16,86" stroke="#e8912d" stroke-width="7"
+                stroke-linecap="round" fill="none"/>
+          <ellipse cx="20" cy="88" rx="10" ry="5.5" fill="#e8912d"/>
+        </g>
+        <g class="leg" transform="translate(36,208)">
+          <path d="M0,0 C-2,28 -8,58 16,86" stroke="#e8912d" stroke-width="7"
+                stroke-linecap="round" fill="none"/>
+          <ellipse cx="20" cy="88" rx="10" ry="5.5" fill="#e8912d"/>
+        </g>
+        <!-- tail -->
+        <path d="M8,182 L-22,168 L-14,190 Z" fill="#e8e8e8"/>
+        <!-- body -->
+        <ellipse cx="48" cy="182" rx="44" ry="32" fill="#fdfdfd" stroke="#e2e2e2" stroke-width="2"/>
+        <!-- wing -->
+        <ellipse class="wing" cx="42" cy="184" rx="27" ry="16" fill="#dcdcdc"/>
+        <!-- neck -->
+        <path d="M80,172 C92,160 96,148 104,134" stroke="#fdfdfd" stroke-width="22"
+              stroke-linecap="round" fill="none"/>
+        <!-- head -->
+        <circle cx="108" cy="128" r="19" fill="#fdfdfd"/>
+        <!-- beak -->
+        <path d="M124,122 L198,134 L124,140 Z" fill="#f5a623"/>
+        <path d="M124,140 L198,134 C172,160 142,158 124,152 Z" fill="#f7c873"/>
+        <!-- eye -->
+        <g class="eye">
+          <circle cx="114" cy="124" r="3.4" fill="#222"/>
+          <circle cx="115" cy="123" r="1.1" fill="#fff"/>
+        </g>
+      </g>
+    </g>
+  </svg>
+  </div>
+</body>
+</html>
