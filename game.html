@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>鹈鹕骑单车 🦤🚲</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; overflow:hidden; background:#0b1020; font-family:"PingFang SC","Microsoft YaHei",sans-serif; user-select:none; }
+  #wrap { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+  #game { width:100%; height:100%; display:block; touch-action:none; }
+  #hud { position:absolute; top:10px; left:12px; color:#fff; font-size:18px; font-weight:700;
+         text-shadow:0 2px 6px rgba(0,0,0,.6); line-height:1.7; pointer-events:none; z-index:5; }
+  #hud .lives { letter-spacing:2px; }
+  #controls { position:absolute; bottom:calc(14px + env(safe-area-inset-bottom)); left:0; right:0;
+              display:flex; justify-content:center; gap:10px; z-index:5; flex-wrap:wrap; padding:0 10px; }
+  .btn { width:64px; height:64px; border-radius:50%; border:3px solid rgba(255,255,255,.85);
+         background:rgba(20,28,48,.55); color:#fff; font-size:26px; cursor:pointer;
+         display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);
+         box-shadow:0 4px 14px rgba(0,0,0,.35); transition:transform .08s; }
+  .btn:active { transform:scale(.9); background:rgba(60,90,140,.75); }
+  .btn.small { width:54px; height:54px; font-size:22px; }
+  .btn.on { background:rgba(255,190,40,.8); border-color:#ffe9a8; }
+  .sep { width:14px; }
+  #overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+             background:rgba(8,12,26,.72); color:#fff; z-index:10; text-align:center; padding:20px; }
+  #overlay h1 { font-size:42px; margin-bottom:10px; }
+  #overlay p { font-size:17px; opacity:.85; margin:4px 0; line-height:1.8; }
+  #overlay .keys { font-size:14px; opacity:.65; }
+  #startBtn { margin-top:18px; font-size:22px; padding:14px 46px; border-radius:999px; border:none;
+              background:linear-gradient(135deg,#ffb13d,#ff7b3d); color:#fff; font-weight:800; cursor:pointer;
+              box-shadow:0 6px 20px rgba(255,140,40,.45); }
+  #startBtn:active { transform:scale(.95); }
+  #over { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
+          background:rgba(8,12,26,.78); color:#fff; z-index:10; text-align:center; }
+  #over h1 { font-size:44px; margin-bottom:8px; }
+  #over .score { font-size:24px; margin:6px 0; }
+  #againBtn { margin-top:16px; font-size:20px; padding:12px 40px; border-radius:999px; border:none;
+              background:linear-gradient(135deg,#4da3ff,#7b5cff); color:#fff; font-weight:800; cursor:pointer; }
+  #pauseTip { position:absolute; top:12px; right:14px; color:#fff; font-size:15px; opacity:.7; z-index:5; pointer-events:none; }
+  #hitFlash { position:absolute; inset:0; pointer-events:none; z-index:6; opacity:0; transition:opacity .12s;
+              background:radial-gradient(ellipse at center, rgba(255,60,60,0) 40%, rgba(255,40,40,.55) 100%); }
+  #game.shake { animation:shk .28s; }
+  @keyframes shk { 0%{transform:translate(0,0)} 20%{transform:translate(-9px,5px)} 40%{transform:translate(7px,-6px)}
+                   60%{transform:translate(-5px,-4px)} 80%{transform:translate(3px,2px)} 100%{transform:translate(0,0)} }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <svg id="game" viewBox="0 0 900 480" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <linearGradient id="skyDay" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#7ec8f7"/><stop offset="1" stop-color="#cfeefb"/>
+      </linearGradient>
+      <linearGradient id="skyNight" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0a1030"/><stop offset="1" stop-color="#1c2a55"/>
+      </linearGradient>
+      <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+        <stop offset="0" stop-color="#fff6c8" stop-opacity=".9"/>
+        <stop offset="1" stop-color="#ffdf6b" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="#ffee9e" stop-opacity=".55"/>
+        <stop offset="1" stop-color="#ffee9e" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+
+    <rect id="sky" x="0" y="0" width="900" height="480" fill="url(#skyDay)"/>
+    <g id="stars" opacity="0"></g>
+    <circle id="sun" cx="780" cy="80" r="42" fill="#ffdf5e"/>
+    <circle id="moon" cx="780" cy="80" r="34" fill="#e8ecf5" opacity="0"/>
+    <g id="clouds"></g>
+    <g id="hills"></g>
+
+    <rect x="0" y="100" width="900" height="380" fill="#3d434e"/>
+    <g id="laneLines"></g>
+    <rect x="0" y="96" width="900" height="8" fill="#f4f4f4"/>
+    <rect x="0" y="472" width="900" height="8" fill="#f4f4f4"/>
+
+    <g id="obstacles"></g>
+
+    <g id="rider" transform="translate(165,268)">
+      <ellipse id="shadow" cx="0" cy="34" rx="62" ry="10" fill="#000" opacity=".22"/>
+      <g id="wheelR">
+        <circle cx="-40" cy="26" r="27" fill="#22262e"/>
+        <circle cx="-40" cy="26" r="17" fill="#dfe5ee"/>
+        <g id="spokesR" stroke="#8a93a5" stroke-width="2">
+          <line x1="-40" y1="9" x2="-40" y2="43"/><line x1="-57" y1="26" x2="-23" y2="26"/>
+          <line x1="-52" y1="14" x2="-28" y2="38"/><line x1="-28" y1="14" x2="-52" y2="38"/>
+        </g>
+        <circle cx="-40" cy="26" r="4" fill="#555c6e"/>
+      </g>
+      <g id="wheelF">
+        <circle cx="44" cy="26" r="27" fill="#22262e"/>
+        <circle cx="44" cy="26" r="17" fill="#dfe5ee"/>
+        <g id="spokesF" stroke="#8a93a5" stroke-width="2">
+          <line x1="44" y1="9" x2="44" y2="43"/><line x1="27" y1="26" x2="61" y2="26"/>
+          <line x1="32" y1="14" x2="56" y2="38"/><line x1="56" y1="14" x2="32" y2="38"/>
+        </g>
+        <circle cx="44" cy="26" r="4" fill="#555c6e"/>
+      </g>
+      <g stroke="#2aa198" stroke-width="6" stroke-linecap="round" fill="none">
+        <line x1="-40" y1="26" x2="-8" y2="-6"/>
+        <line x1="-8" y1="-6" x2="30" y2="-10"/>
+        <line x1="30" y1="-10" x2="44" y2="26"/>
+        <line x1="-8" y1="-6" x2="4" y2="24"/>
+        <line x1="4" y1="24" x2="44" y2="26"/>
+      </g>
+      <rect x="-16" y="-14" width="18" height="7" rx="3.5" fill="#3a2f28"/>
+      <line x1="30" y1="-10" x2="36" y2="-26" stroke="#2aa198" stroke-width="6" stroke-linecap="round"/>
+      <line x1="28" y1="-26" x2="44" y2="-26" stroke="#3a2f28" stroke-width="6" stroke-linecap="round"/>
+      <g id="crank">
+        <line id="crankArm1" x1="4" y1="24" x2="4" y2="10" stroke="#222" stroke-width="5" stroke-linecap="round"/>
+        <line id="crankArm2" x1="4" y1="24" x2="4" y2="38" stroke="#222" stroke-width="5" stroke-linecap="round"/>
+        <rect id="pedal1" x="-4" y="6" width="16" height="6" rx="2" fill="#111"/>
+        <rect id="pedal2" x="-4" y="36" width="16" height="6" rx="2" fill="#111"/>
+      </g>
+      <circle cx="4" cy="24" r="6" fill="#666"/>
+      <line id="leg1" x1="-4" y1="-22" x2="4" y2="10" stroke="#e8a34d" stroke-width="7" stroke-linecap="round"/>
+      <line id="leg2" x1="-4" y1="-22" x2="4" y2="38" stroke="#d18a35" stroke-width="7" stroke-linecap="round"/>
+      <ellipse cx="-2" cy="-42" rx="32" ry="21" fill="#f7f4ec"/>
+      <path d="M -28 -52 Q -40 -48 -44 -38 Q -34 -36 -28 -42 Z" fill="#e3ddd0"/>
+      <g id="wing">
+        <ellipse cx="-4" cy="-42" rx="20" ry="12" fill="#ded8c8"/>
+        <ellipse cx="-8" cy="-40" rx="12" ry="7" fill="#c9c2ae"/>
+      </g>
+      <path d="M 22 -52 Q 34 -58 36 -70" stroke="#f7f4ec" stroke-width="13" stroke-linecap="round" fill="none"/>
+      <circle cx="37" cy="-74" r="11" fill="#f7f4ec"/>
+      <circle cx="41" cy="-76" r="2.6" fill="#1c1c1c"/>
+      <polygon points="46,-78 92,-70 46,-66" fill="#f5a623"/>
+      <path id="pouch" d="M 50 -66 Q 68 -52 88 -68 Q 70 -62 50 -66 Z" fill="#e08a1e"/>
+      <circle id="lampDot" cx="40" cy="-20" r="5" fill="#8a93a5"/>
+      <circle id="lampGlow" cx="40" cy="-20" r="14" fill="url(#glow)" opacity="0"/>
+      <polygon id="beamPoly" points="44,-24 44,-16 340,-70 340,40" fill="url(#beam)" opacity="0"/>
+    </g>
+
+    <g id="fx"></g>
+    <path id="nightShade" d="" fill="#060a1c" fill-rule="evenodd" opacity="0"/>
+  </svg>
+
+  <div id="hud">
+    <div>🏁 <span id="dist">0</span> m &nbsp; ✨ <span id="dodge">0</span></div>
+    <div class="lives" id="lives">❤❤❤</div>
+  </div>
+  <div id="pauseTip">空格暂停</div>
+  <div id="hitFlash"></div>
+
+  <div id="controls">
+    <button class="btn" id="btnUp">⬆</button>
+    <button class="btn" id="btnDown">⬇</button>
+    <div class="sep"></div>
+    <button class="btn small" id="btnLamp">💡</button>
+    <button class="btn small" id="btnBell">🔔</button>
+    <div class="sep"></div>
+    <button class="btn small" id="btnDay">🌙</button>
+    <button class="btn small" id="btnPause">⏸</button>
+  </div>
+
+  <div id="overlay">
+    <h1>🦤 鹈鹕骑单车 🚲</h1>
+    <p>帮鹈鹕一路躲开障碍，骑得越远越好！</p>
+    <p class="keys">⬆⬇ / W S 换车道 &nbsp;·&nbsp; L 车灯 &nbsp;·&nbsp; B 车铃（惊走小动物）<br>黑夜不开灯会看不见路哦 🌙</p>
+    <button id="startBtn">出 发</button>
+  </div>
+
+  <div id="over">
+    <h1>💥 翻车啦！</h1>
+    <div class="score">里程 <span id="fDist">0</span> m · 躲避 <span id="fDodge">0</span></div>
+    <button id="againBtn">🔄 再来一次</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const NS = 'http://www.w3.org/2000/svg';
+const W = 900, H = 480, TOP = 100;
+const LANES = [168, 268, 368];
+const PX = 165;
+const $ = id => document.getElementById(id);
+const mk = (t, attrs, parent) => {
+  const el = document.createElementNS(NS, t);
+  for (const k in attrs) el.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(el);
+  return el;
+};
+
+/* ---------- state ---------- */
+const S = {
+  running:false, paused:false, over:false,
+  lane:1, py:LANES[1],
+  lives:3, invUntil:0,
+  dist:0, dodge:0,
+  speed:270, crank:0, dashOff:0, hillOff:0, cloudOff:0,
+  light:false, night:false,
+  bellCD:0, nextSpawn:0,
+  obs:[], clouds:[], hills:[], parts:[],
+  t:0
+};
+
+/* ---------- audio ---------- */
+let AC = null;
+function ac(){
+  if(!AC){ try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; } }
+  if(AC && AC.state==='suspended') AC.resume();
+  return AC;
+}
+function tone(f, t0, dur, vol, type){
+  const c = ac(); if(!c) return;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type||'sine'; o.frequency.value = f;
+  g.gain.setValueAtTime(.0001, t0);
+  g.gain.exponentialRampToValueAtTime(vol, t0+.02);
+  g.gain.exponentialRampToValueAtTime(.0001, t0+dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(t0); o.stop(t0+dur+.05);
+}
+function sndBell(){ const c=ac(); if(!c) return; const t=c.currentTime;
+  tone(987.77,t,.9,.4); tone(1318.5,t+.22,.9,.35); }
+function sndHit(){ const c=ac(); if(!c) return; const t=c.currentTime;
+  tone(140,t,.3,.5,'sawtooth'); tone(90,t,.35,.5,'square'); }
+function sndBlip(){ const c=ac(); if(!c) return; tone(660,c.currentTime,.12,.12); }
+
+/* ---------- scenery ---------- */
+const laneG = $('laneLines');
+for(let i=0;i<2;i++){
+  for(let j=0;j<12;j++){
+    mk('rect',{x:j*90, y:LANES[i]+50, width:44, height:7, rx:3.5, fill:'#f4f4f4', opacity:.85}, laneG)
+      .dataset.i = j;
+  }
+}
+const hillsG = $('hills');
+for(let i=0;i<6;i++){
+  const h = mk('ellipse',{cx:i*220, cy:TOP+6, rx:130, ry:44, fill:'#7fae7a'}, hillsG);
+  S.hills.push(h);
+}
+const cloudsG = $('clouds');
+for(let i=0;i<5;i++){
+  const g = mk('g',{},cloudsG);
+  const x = Math.random()*W, y = 20+Math.random()*60, s = .7+Math.random()*.7;
+  mk('ellipse',{cx:0,cy:0,rx:34,ry:16,fill:'#fff',opacity:.9},g);
+  mk('ellipse',{cx:22,cy:-6,rx:24,ry:13,fill:'#fff',opacity:.9},g);
+  mk('ellipse',{cx:-24,cy:-4,rx:20,ry:11,fill:'#fff',opacity:.9},g);
+  g.setAttribute('transform',`translate(${x},${y}) scale(${s})`);
+  S.clouds.push({g, x, y, s, v:12+Math.random()*14});
+}
+const starsG = $('stars');
+for(let i=0;i<70;i++){
+  mk('circle',{cx:Math.random()*W, cy:Math.random()*TOP, r:1+Math.random()*1.4, fill:'#fff'}, starsG);
+}
+
+/* ---------- obstacles ---------- */
+const obsG = $('obstacles');
+const TYPES = ['cone','rock','puddle','animal'];
+function drawObs(g, type){
+  if(type==='cone'){
+    mk('polygon',{points:'0,26 -20,58 20,58', fill:'#ff7b2e'},g);
+    mk('rect',{x:-14,y:36,width:28,height:8,fill:'#fff'},g);
+    mk('rect',{x:-24,y:58,width:48,height:8,rx:3,fill:'#c2571a'},g);
+  } else if(type==='rock'){
+    mk('path',{d:'M -24 58 Q -28 34 -12 28 Q 2 20 16 30 Q 28 38 22 58 Z', fill:'#8d8fa3'},g);
+    mk('path',{d:'M -12 34 Q -4 30 4 34', stroke:'#6d6f82','stroke-width':3, fill:'none','stroke-linecap':'round'},g);
+  } else if(type==='puddle'){
+    mk('ellipse',{cx:0,cy:54,rx:30,ry:10,fill:'#4db2ff',opacity:.85},g);
+    mk('ellipse',{cx:-8,cy:52,rx:10,ry:4,fill:'#bfe6ff',opacity:.8},g);
+  } else {
+    mk('ellipse',{cx:0,cy:44,rx:16,ry:12,fill:'#b08968'},g);
+    mk('ellipse',{cx:-12,cy:28,rx:5,ry:12,fill:'#b08968'},g);
+    mk('ellipse',{cx:-2,cy:26,rx:5,ry:12,fill:'#b08968'},g);
+    mk('circle',{cx:-16,cy:40,r:2.4,fill:'#222'},g);
+    mk('circle',{cx:12,cy:52,r:4,fill:'#b08968'},g);
+  }
+}
+function spawn(){
+  const lane = (Math.random()*3)|0;
+  const type = TYPES[(Math.random()*TYPES.length)|0];
+  // 别在同一车道连刷两个贴太近的
+  for(const o of S.obs){ if(o.lane===lane && o.x > W-260) return; }
+  const g = mk('g',{},obsG);
+  drawObs(g,type);
+  S.obs.push({g, x:W+60, lane, type, counted:false, scared:false, scareT:0, hop:Math.random()*6.28});
+}
+
+/* ---------- fx ---------- */
+const fxG = $('fx');
+function ripple(x,y){
+  const c = mk('circle',{cx:x,cy:y,r:8,fill:'none',stroke:'#ffd94d','stroke-width':4},fxG);
+  let r=8, op=1;
+  const id = setInterval(()=>{
+    r+=7; op-=.09;
+    if(op<=0){ clearInterval(id); c.remove(); return; }
+    c.setAttribute('r',r); c.setAttribute('opacity',op);
+  },30);
+}
+
+/* ---------- actions ---------- */
+function changeLane(d){
+  if(!S.running||S.paused||S.over) return;
+  S.lane = Math.min(2, Math.max(0, S.lane+d));
+  sndBlip();
+}
+function toggleLight(){
+  if(!S.running||S.over) return;
+  S.light=!S.light;
+  $('btnLamp').classList.toggle('on',S.light);
+  $('lampGlow').setAttribute('opacity', S.light? .9:0);
+  $('beamPoly').setAttribute('opacity', S.light? .8:0);
+  $('lampDot').setAttribute('fill', S.light? '#ffe27a':'#8a93a5');
+  sndBlip();
+}
+function ringBell(){
+  if(!S.running||S.paused||S.over) return;
+  const now = S.t;
+  if(now < S.bellCD) return;
+  S.bellCD = now + .8;
+  sndBell();
+  ripple(PX+70, S.py-70);
+  // 惊走前方同车道小动物（按实时位置）
+  for(const o of S.obs){
+    if(o.type==='animal' && !o.scared && Math.abs(LANES[o.lane]-S.py) < 48 && o.x>PX && o.x<PX+300){
+      o.scared = true; o.scareT = 0;
+      S.dodge++; $('dodge').textContent = S.dodge;
+    }
+  }
+}
+function toggleDay(){
+  if(S.over) return;
+  S.night=!S.night;
+  $('sky').setAttribute('fill', S.night? 'url(#skyNight)':'url(#skyDay)');
+  $('sun').setAttribute('opacity', S.night?0:1);
+  $('moon').setAttribute('opacity', S.night?1:0);
+  $('stars').setAttribute('opacity', S.night?1:0);
+  $('btnDay').textContent = S.night? '🌞':'🌙';
+  $('roadTint') && $('roadTint').remove();
+  sndBlip();
+}
+function togglePause(){
+  if(!S.running||S.over) return;
+  S.paused=!S.paused;
+  $('btnPause').textContent = S.paused? '▶':'⏸';
+  $('pauseTip').textContent = S.paused? '已暂停':'空格暂停';
+}
+function hitFX(x,y){
+  for(let i=0;i<12;i++){
+    const c = mk('circle',{cx:x, cy:y, r:3+Math.random()*4,
+      fill:['#ff5a5a','#ffb13d','#ffffff','#ff8a5a'][i%4]}, fxG);
+    const a = Math.random()*Math.PI*2, sp = 130+Math.random()*200;
+    S.parts.push({el:c, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp-90, life:.65});
+  }
+  const g = $('game');
+  g.classList.remove('shake'); void g.offsetWidth; g.classList.add('shake');
+  const f = $('hitFlash');
+  f.style.opacity = .6;
+  setTimeout(()=>{ f.style.opacity = 0; }, 130);
+}
+function hit(){
+  S.lives--;
+  $('lives').textContent = '❤'.repeat(Math.max(0,S.lives)) + '🖤'.repeat(3-Math.max(0,S.lives));
+  S.invUntil = S.t + 1.6;
+  sndHit();
+  if(S.lives<=0) gameOver();
+}
+function gameOver(){
+  S.over=true; S.running=false;
+  $('fDist').textContent = Math.floor(S.dist);
+  $('fDodge').textContent = S.dodge;
+  $('over').style.display='flex';
+}
+function reset(){
+  for(const o of S.obs) o.g.remove();
+  S.obs=[]; S.lane=1; S.py=LANES[1];
+  S.lives=3; S.dist=0; S.dodge=0; S.speed=270;
+  S.light=false; S.invUntil=0; S.nextSpawn=0; S.t=0;
+  $('lives').textContent='❤❤❤';
+  $('dist').textContent='0'; $('dodge').textContent='0';
+  $('btnLamp').classList.remove('on');
+  $('lampGlow').setAttribute('opacity',0);
+  $('beamPoly').setAttribute('opacity',0);
+  $('lampDot').setAttribute('fill','#8a93a5');
+  $('over').style.display='none';
+  fxG.innerHTML='';
+}
+function start(){
+  ac(); reset();
+  S.running=true; S.paused=false; S.over=false;
+  $('overlay').classList.add('hidden');
+  $('btnPause').textContent='⏸'; $('pauseTip').textContent='空格暂停';
+  requestAnimationFrame(loop);
+}
+
+/* ---------- main loop ---------- */
+let lastT = 0;
+function loop(ts){
+  if(!S.running) return;
+  const now = ts/1000;
+  let dt = Math.min(.05, now-(lastT||now));
+  lastT = now;
+  if(S.paused){ requestAnimationFrame(loop); return; }
+  S.t += dt;
+
+  // 难度
+  S.speed = Math.min(560, 270 + S.dist*.045);
+  S.dist += S.speed*dt*.06;
+  $('dist').textContent = Math.floor(S.dist);
+
+  // 车道平滑
+  S.py += (LANES[S.lane]-S.py)*Math.min(1, dt*9);
+
+  // 踩踏板 & 轮子
+  S.crank += dt*(4+S.speed/90);
+  const cx=4, cy=24, r=14;
+  const a1=S.crank, a2=S.crank+Math.PI;
+  const p1x=cx+Math.sin(a1)*r, p1y=cy+Math.cos(a1)*r;
+  const p2x=cx+Math.sin(a2)*r, p2y=cy+Math.cos(a2)*r;
+  $('crankArm1').setAttribute('x2',p1x); $('crankArm1').setAttribute('y2',p1y);
+  $('crankArm2').setAttribute('x2',p2x); $('crankArm2').setAttribute('y2',p2y);
+  $('pedal1').setAttribute('x',p1x-8); $('pedal1').setAttribute('y',p1y-3);
+  $('pedal2').setAttribute('x',p2x-8); $('pedal2').setAttribute('y',p2y-3);
+  $('leg1').setAttribute('x2',p1x); $('leg1').setAttribute('y2',p1y-4);
+  $('leg2').setAttribute('x2',p2x); $('leg2').setAttribute('y2',p2y-4);
+  const wa = (S.t*S.speed/4)%360;
+  $('spokesR').setAttribute('transform',`rotate(${wa} -40 26)`);
+  $('spokesF').setAttribute('transform',`rotate(${wa} 44 26)`);
+  $('wing').setAttribute('transform',`rotate(${Math.sin(S.t*7)*7} -4 -42)`);
+  $('rider').setAttribute('transform',`translate(${PX},${S.py})`);
+  // 无敌闪烁
+  $('rider').setAttribute('opacity', S.t<S.invUntil ? (Math.sin(S.t*30)>0? .35:1) : 1);
+
+  // 车道线滚动
+  S.dashOff = (S.dashOff + S.speed*dt) % 90;
+  for(const d of laneG.children){
+    const j = +d.dataset.i;
+    d.setAttribute('x', j*90 - S.dashOff);
+  }
+  // 山丘 & 云
+  S.hillOff = (S.hillOff + S.speed*dt*.15) % 440;
+  S.hills.forEach((h,i)=> h.setAttribute('cx', ((i*220 - S.hillOff)%1320+1320)%1320 - 210));
+  for(const c of S.clouds){
+    c.x -= (c.v + S.speed*.06)*dt;
+    if(c.x < -80) c.x = W+80;
+    c.g.setAttribute('transform',`translate(${c.x},${c.y}) scale(${c.s})`);
+  }
+
+  // 生成障碍
+  S.nextSpawn -= dt;
+  if(S.nextSpawn<=0){
+    spawn();
+    const base = Math.max(.62, 1.5 - S.dist/900);
+    S.nextSpawn = base*(0.7+Math.random()*0.6);
+  }
+
+  // 障碍移动 / 碰撞 / 躲避
+  for(let i=S.obs.length-1;i>=0;i--){
+    const o = S.obs[i];
+    if(o.scared){
+      o.scareT += dt;
+      o.g.setAttribute('transform',`translate(${o.x},${o.y||0}) translate(0,${-o.scareT*160}) rotate(${o.scareT*300})`);
+      o.g.setAttribute('opacity', Math.max(0,1-o.scareT*1.4));
+      if(o.scareT>.7){ o.g.remove(); S.obs.splice(i,1); }
+      continue;
+    }
+    o.x -= S.speed*dt;
+    const oy = LANES[o.lane];
+    const hopY = o.type==='animal' ? Math.abs(Math.sin(S.t*6+o.hop))*-8 : 0;
+    o.g.setAttribute('transform',`translate(${o.x},${oy+hopY})`);
+    // 碰撞：按鹈鹕实时位置判定，跟视觉同步
+    if(!o.counted && Math.abs(LANES[o.lane]-S.py) < 48 && o.x < PX+46 && o.x > PX-56){
+      if(S.t >= S.invUntil){ hitFX(o.x, LANES[o.lane]-10); hit(); }
+      o.counted = true;
+      o.g.remove(); S.obs.splice(i,1); continue;
+    }
+    // 躲避得分
+    if(!o.counted && o.x < PX-70){
+      o.counted = true; S.dodge++;
+      $('dodge').textContent = S.dodge;
+      sndBlip();
+    }
+    if(o.x < -90){ o.g.remove(); S.obs.splice(i,1); }
+  }
+
+  // 粒子更新
+  for(let i=S.parts.length-1;i>=0;i--){
+    const p = S.parts[i];
+    p.life -= dt;
+    if(p.life<=0){ p.el.remove(); S.parts.splice(i,1); continue; }
+    p.vy += 520*dt;
+    p.el.setAttribute('cx', +p.el.getAttribute('cx') + p.vx*dt);
+    p.el.setAttribute('cy', +p.el.getAttribute('cy') + p.vy*dt);
+    p.el.setAttribute('opacity', Math.max(0, p.life/.65));
+  }
+
+  // 黑夜遮罩：evenodd 打孔（灯开=光束形，不开=小圆）
+  if(S.night){
+    const hx = PX+40, hy = S.py-20;
+    let hole;
+    if(S.light){
+      hole = `M ${hx} ${hy-14} L ${hx+330} ${hy-88} L ${hx+330} ${hy+88} L ${hx} ${hy+14} Z`;
+    } else {
+      hole = `M ${hx-80} ${hy} a 80 80 0 1 0 160 0 a 80 80 0 1 0 -160 0`;
+    }
+    $('nightShade').setAttribute('d', `M 0 0 H 900 V 480 H 0 Z ${hole}`);
+    $('nightShade').setAttribute('opacity', .72);
+  } else {
+    $('nightShade').setAttribute('opacity', 0);
+  }
+
+  requestAnimationFrame(loop);
+}
+
+/* ---------- input ---------- */
+document.addEventListener('keydown', e=>{
+  if(['ArrowUp','ArrowDown',' '].includes(e.key)) e.preventDefault();
+  if(e.key==='ArrowUp'||e.key==='w'||e.key==='W') changeLane(-1);
+  else if(e.key==='ArrowDown'||e.key==='s'||e.key==='S') changeLane(1);
+  else if(e.key==='l'||e.key==='L') toggleLight();
+  else if(e.key==='b'||e.key==='B') ringBell();
+  else if(e.key===' '){
+    if(!$('overlay').classList.contains('hidden') && !S.running) start();
+    else if(S.over) start();
+    else togglePause();
+  }
+});
+$('btnUp').onclick = ()=>changeLane(-1);
+$('btnDown').onclick = ()=>changeLane(1);
+$('btnLamp').onclick = toggleLight;
+$('btnBell').onclick = ringBell;
+$('btnDay').onclick = toggleDay;
+$('btnPause').onclick = togglePause;
+$('startBtn').onclick = start;
+$('againBtn').onclick = ()=>{ start(); };
+// 触摸滑动换道
+let ty0=null;
+$('game').addEventListener('touchstart', e=>{ ty0=e.touches[0].clientY; }, {passive:true});
+$('game').addEventListener('touchend', e=>{
+  if(ty0===null) return;
+  const dy = e.changedTouches[0].clientY - ty0;
+  if(dy < -30) changeLane(-1); else if(dy > 30) changeLane(1);
+  ty0=null;
+}, {passive:true});
+})();
+</script>
+</body>
+</html>
