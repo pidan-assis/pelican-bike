@@ -17,6 +17,15 @@
   }
   h1 { font-size: 2.4rem; color: #1a3a4a; margin-bottom: 6px; }
   .caption { color: #5b7a8a; margin-bottom: 20px; }
+
+  .playLink {
+    display: inline-block; margin: 8px 0 4px; padding: 12px 36px;
+    font-size: 1.1rem; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg,#ff7b3d,#ffb13d); border-radius: 999px;
+    text-decoration: none; box-shadow: 0 6px 20px rgba(255,140,40,.35);
+    transition: transform .08s;
+  }
+  .playLink:hover { transform: scale(1.05); }
   .scene {
     width: 100%;
     max-width: 920px;
@@ -81,6 +90,7 @@
 <body>
   <h1>鹈鹕骑单车 🚲</h1>
   <p class="caption">pi 罢工，Muse 顶班之作</p>
+  <a class="playLink" href="game.html">▶ 玩游戏版</a>
 
   <div class="scene">
   <svg viewBox="0 0 920 420" xmlns="http://www.w3.org/2000/svg">

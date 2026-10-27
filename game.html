@@ -44,6 +44,9 @@
   @keyframes shk { 0%{transform:translate(0,0)} 20%{transform:translate(-9px,5px)} 40%{transform:translate(7px,-6px)}
                    60%{transform:translate(-5px,-4px)} 80%{transform:translate(3px,2px)} 100%{transform:translate(0,0)} }
   .hidden { display:none !important; }
+  #footerLink { position:absolute; bottom:12px; right:12px; color:#9fd6ff; font-size:13px;
+    opacity:.7; pointer-events:auto; z-index:5; text-decoration:underline; }
+  #footerLink:hover { opacity:1; }
 </style>
 </head>
 <body>
@@ -140,8 +143,9 @@
   </svg>
 
   <div id="hud">
-    <div>🏁 <span id="dist">0</span> m &nbsp; ✨ <span id="dodge">0</span></div>
+    <div>🏁 <span id="dist">0</span> m &nbsp; ✨ <span id="dodge">0</span> &nbsp; ⭐ <span id="score">0</span></div>
     <div class="lives" id="lives">❤❤❤</div>
+    <div>🏆 历史最佳 <span id="best">0</span></div>
   </div>
   <div id="pauseTip">空格暂停</div>
   <div id="hitFlash"></div>
@@ -166,10 +170,14 @@
 
   <div id="over">
     <h1>💥 翻车啦！</h1>
-    <div class="score">里程 <span id="fDist">0</span> m · 躲避 <span id="fDodge">0</span></div>
+    <div class="score">本局分数 <span id="fScore">0</span></div>
+    <div class="score">本局距离 <span id="fDist">0</span> m · 躲避 <span id="fDodge">0</span></div>
+    <div class="score">历史最佳 <span id="fBest">0</span> <span id="fRecord" style="display:none">🎉 新纪录！</span></div>
     <button id="againBtn">🔄 再来一次</button>
+    <div class="keys" style="margin-top:16px">按 R / 回车 快速重新开始</div>
   </div>
 </div>
+<a id="footerLink" href="index.html">看动画版</a>
 
 <script>
 (function(){
@@ -191,13 +199,23 @@ const S = {
   running:false, paused:false, over:false,
   lane:1, py:LANES[1],
   lives:3, invUntil:0,
-  dist:0, dodge:0,
+  dist:0, dodge:0, score:0,
+  best:{score:0, dist:0},
   speed:270, crank:0, dashOff:0, hillOff:0, cloudOff:0,
   light:false, night:false,
-  bellCD:0, nextSpawn:0,
+  bellCD:0, nextSpawn:0, lastMilestone:0,
   obs:[], clouds:[], hills:[], parts:[],
   t:0
 };
+
+/* ---------- best-score persistence ---------- */
+function loadBest(){
+  try{ const j = JSON.parse(localStorage.getItem('pelicanBest')); 
+    if(j && typeof j.score==='number' && typeof j.dist==='number'){ S.best={score:j.score, dist:j.dist}; }
+  }catch(e){}
+  $('best').textContent = S.best.score;
+}
+function saveBest(){ localStorage.setItem('pelicanBest', JSON.stringify(S.best)); }
 
 /* ---------- audio ---------- */
 let AC = null;
@@ -221,6 +239,25 @@ function sndBell(){ const c=ac(); if(!c) return; const t=c.currentTime;
 function sndHit(){ const c=ac(); if(!c) return; const t=c.currentTime;
   tone(140,t,.3,.5,'sawtooth'); tone(90,t,.35,.5,'square'); }
 function sndBlip(){ const c=ac(); if(!c) return; tone(660,c.currentTime,.12,.12); }
+
+/* ---------- score & milestones ---------- */
+function updateScore(){
+  S.score = S.dodge*10 + Math.floor(S.dist);
+  $('score').textContent = S.score;
+}
+function milestoneToast(m){
+  const t = mk('text',{x:W/2,y:H/2-40, fill:'#ffd93b',
+    'font-size':28, 'font-weight':'700', 'text-anchor':'middle', opacity:1}, fxG);
+  t.textContent = m+' 米！';
+  let op = 1;
+  const id = setInterval(()=>{ op -= .025; t.setAttribute('opacity',op);
+    if(op<=0){ clearInterval(id); t.remove(); } }, 30);
+  sndBlip();
+}
+function checkMilestone(){
+  const cur = Math.floor(S.dist/500);
+  if(cur > S.lastMilestone){ S.lastMilestone = cur; milestoneToast(cur*500); }
+}
 
 /* ---------- scenery ---------- */
 const laneG = $('laneLines');
@@ -320,7 +357,7 @@ function ringBell(){
   for(const o of S.obs){
     if(o.type==='animal' && !o.scared && Math.abs(LANES[o.lane]-S.py) < 48 && o.x>PX && o.x<PX+300){
       o.scared = true; o.scareT = 0;
-      S.dodge++; $('dodge').textContent = S.dodge;
+      S.dodge++; $('dodge').textContent = S.dodge; updateScore();
     }
   }
 }
@@ -363,17 +400,30 @@ function hit(){
 }
 function gameOver(){
   S.over=true; S.running=false;
+  updateScore();
+  let newBest = false;
+  if(S.score > S.best.score){ S.best.score = S.score; newBest=true; }
+  if(S.dist > S.best.dist){ S.best.dist = S.dist; }
+  saveBest();
+  $('fScore').textContent = S.score;
   $('fDist').textContent = Math.floor(S.dist);
   $('fDodge').textContent = S.dodge;
+  $('fBest').textContent = S.best.score;
+  $('fRecord').style.display = newBest? 'inline':'none';
+  if(newBest){
+    const c=ac(); if(c){ const t=c.currentTime;
+      tone(588.33,t,.14,.18); tone(740.41,t+.14,.14,.18);
+      tone(932.33,t+.28,.14,.18); tone(1174.66,t+.42,.2,.2); }
+  }
   $('over').style.display='flex';
 }
 function reset(){
   for(const o of S.obs) o.g.remove();
   S.obs=[]; S.lane=1; S.py=LANES[1];
-  S.lives=3; S.dist=0; S.dodge=0; S.speed=270;
-  S.light=false; S.invUntil=0; S.nextSpawn=0; S.t=0;
+  S.lives=3; S.dist=0; S.dodge=0; S.score=0; S.speed=270;
+  S.light=false; S.invUntil=0; S.nextSpawn=0; S.lastMilestone=0; S.t=0;
   $('lives').textContent='❤❤❤';
-  $('dist').textContent='0'; $('dodge').textContent='0';
+  $('dist').textContent='0'; $('dodge').textContent='0'; $('score').textContent='0';
   $('btnLamp').classList.remove('on');
   $('lampGlow').setAttribute('opacity',0);
   $('beamPoly').setAttribute('opacity',0);
@@ -382,7 +432,7 @@ function reset(){
   fxG.innerHTML='';
 }
 function start(){
-  ac(); reset();
+  ac(); loadBest(); reset();
   S.running=true; S.paused=false; S.over=false;
   $('overlay').classList.add('hidden');
   $('btnPause').textContent='⏸'; $('pauseTip').textContent='空格暂停';
@@ -403,6 +453,8 @@ function loop(ts){
   S.speed = Math.min(560, 270 + S.dist*.045);
   S.dist += S.speed*dt*.06;
   $('dist').textContent = Math.floor(S.dist);
+  updateScore();
+  checkMilestone();
 
   // 车道平滑
   S.py += (LANES[S.lane]-S.py)*Math.min(1, dt*9);
@@ -473,7 +525,7 @@ function loop(ts){
     // 躲避得分
     if(!o.counted && o.x < PX-70){
       o.counted = true; S.dodge++;
-      $('dodge').textContent = S.dodge;
+      $('dodge').textContent = S.dodge; updateScore();
       sndBlip();
     }
     if(o.x < -90){ o.g.remove(); S.obs.splice(i,1); }
@@ -520,6 +572,8 @@ document.addEventListener('keydown', e=>{
     else if(S.over) start();
     else togglePause();
   }
+  // 快速重新开始（仅在游戏结束时生效）
+  else if((e.key==='r'||e.key==='R'||e.key==='Enter') && S.over){ e.preventDefault(); start(); }
 });
 $('btnUp').onclick = ()=>changeLane(-1);
 $('btnDown').onclick = ()=>changeLane(1);
@@ -538,6 +592,7 @@ $('game').addEventListener('touchend', e=>{
   if(dy < -30) changeLane(-1); else if(dy > 30) changeLane(1);
   ty0=null;
 }, {passive:true});
+loadBest();
 })();
 </script>
 </body>
