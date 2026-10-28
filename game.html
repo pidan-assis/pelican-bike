@@ -363,9 +363,9 @@ const TYPES = ['cone','rock','puddle','animal'];
 function drawObs(g, type){
   // 每种障碍先落一个接触阴影，跟骑手同款，免得像贴纸浮在路上
   if(type==='cone'){
-    mk('ellipse',{cx:0,cy:63,rx:27,ry:5,fill:'#000',opacity:.22},g);
+    mk('ellipse',{cx:0,cy:67,rx:26,ry:4.5,fill:'#000',opacity:.25},g);
     mk('polygon',{points:'0,26 -20,58 20,58', fill:'#ff7b2e'},g);
-    mk('polygon',{points:'0,26 20,58 5,58 0,38', fill:'#000',opacity:.10},g);
+    mk('polygon',{points:'0,26 20,58 5,58 0,38', fill:'#000',opacity:.16},g);
     mk('rect',{x:-14,y:36,width:28,height:8,fill:'#fff'},g);
     mk('rect',{x:-24,y:58,width:48,height:8,rx:3,fill:'#c2571a'},g);
   } else if(type==='rock'){
@@ -380,7 +380,7 @@ function drawObs(g, type){
     mk('ellipse',{cx:-8,cy:52,rx:11,ry:3.6,fill:'#eaf7ff',opacity:.5},g);
   } else {
     // 兔子：侧面像——长耳（带粉内耳）、后腿、圆尾巴，奶油灰跟鹈鹕同色系
-    mk('ellipse',{cx:0,cy:57,rx:21,ry:4.6,fill:'#000',opacity:.22},g);
+    mk('ellipse',{cx:0,cy:60.5,rx:22,ry:4.6,fill:'#000',opacity:.25},g);
     mk('ellipse',{cx:-19,cy:19,rx:4,ry:13,fill:'#e8e2d6',transform:'rotate(-14 -19 19)'},g);
     mk('ellipse',{cx:-12,cy:17,rx:4,ry:14,fill:'#e8e2d6',transform:'rotate(-4 -12 17)'},g);
     mk('ellipse',{cx:-12.5,cy:19,rx:1.8,ry:9,fill:'#f2b8c6',transform:'rotate(-4 -12 17)'},g);
