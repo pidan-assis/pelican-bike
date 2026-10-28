@@ -15,17 +15,20 @@
     align-items: center;
     padding: 32px 16px;
   }
-  h1 { font-size: 2.4rem; color: #1a3a4a; margin-bottom: 6px; }
-  .caption { color: #5b7a8a; margin-bottom: 20px; }
+  :root { --ink:#1a1d24; --paper:#fdfcf8; --accent:#f5a623; --teal:#2aa198; --asphalt-dark:#2a2d36; }
+  h1 { font-size: 2.2rem; color: #1a1d24; margin-bottom: 6px; letter-spacing: 0.04em; font-weight: 800; }
+  .caption { color: #5b7a8a; margin-bottom: 22px; font-size: 1rem; }
 
   .playLink {
-    display: inline-block; margin: 8px 0 4px; padding: 12px 36px;
-    font-size: 1.1rem; font-weight: 700; color: #fff;
-    background: linear-gradient(135deg,#ff7b3d,#ffb13d); border-radius: 999px;
-    text-decoration: none; box-shadow: 0 6px 20px rgba(255,140,40,.35);
-    transition: transform .08s;
+    display: inline-block; margin: 8px 0 4px; padding: 14px 40px;
+    font-size: 1.1rem; font-weight: 800; color: #1a1d24;
+    background: #f5a623; border-radius: 999px;
+    text-decoration: none; box-shadow: 0 6px 24px rgba(245,166,35,.35);
+    transition: transform .08s, background .1s; letter-spacing: 0.06em;
+    font-family: system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
   }
-  .playLink:hover { transform: scale(1.05); }
+  .playLink:hover { background: #ffb540; }
+  .playLink:focus-visible { outline: 3px solid #2aa198; outline-offset: 2px; }
   .scene {
     width: 100%;
     max-width: 920px;
@@ -90,7 +93,7 @@
 <body>
   <h1>鹈鹕骑单车 🚲</h1>
   <p class="caption">pi 罢工，Muse 顶班之作</p>
-  <a class="playLink" href="game.html">▶ 玩游戏版</a>
+  <a class="playLink" href="game.html">玩游戏版</a>
 
   <div class="scene">
   <svg viewBox="0 0 920 420" xmlns="http://www.w3.org/2000/svg">
