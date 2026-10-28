@@ -361,22 +361,36 @@ for(let i=0;i<70;i++){
 const obsG = $('obstacles');
 const TYPES = ['cone','rock','puddle','animal'];
 function drawObs(g, type){
+  // 每种障碍先落一个接触阴影，跟骑手同款，免得像贴纸浮在路上
   if(type==='cone'){
+    mk('ellipse',{cx:0,cy:67,rx:26,ry:4.5,fill:'#000',opacity:.25},g);
     mk('polygon',{points:'0,26 -20,58 20,58', fill:'#ff7b2e'},g);
+    mk('polygon',{points:'0,26 20,58 5,58 0,38', fill:'#000',opacity:.16},g);
     mk('rect',{x:-14,y:36,width:28,height:8,fill:'#fff'},g);
     mk('rect',{x:-24,y:58,width:48,height:8,rx:3,fill:'#c2571a'},g);
   } else if(type==='rock'){
-    mk('path',{d:'M -24 58 Q -28 34 -12 28 Q 2 20 16 30 Q 28 38 22 58 Z', fill:'#8d8fa3'},g);
-    mk('path',{d:'M -12 34 Q -4 30 4 34', stroke:'#6d6f82','stroke-width':3, fill:'none','stroke-linecap':'round'},g);
+    mk('ellipse',{cx:0,cy:59,rx:27,ry:5,fill:'#000',opacity:.22},g);
+    mk('path',{d:'M -24 58 Q -28 34 -12 28 Q 2 20 16 30 Q 28 38 22 58 Z', fill:'#9395a8'},g);
+    mk('path',{d:'M 2 21 Q 16 30 22 40 Q 26 49 22 58 L 4 58 Q 9 38 2 21 Z', fill:'#7b7d90'},g);
+    mk('path',{d:'M -14 36 Q -6 31 3 35', stroke:'#c9cbda','stroke-width':3, fill:'none','stroke-linecap':'round'},g);
   } else if(type==='puddle'){
-    mk('ellipse',{cx:0,cy:54,rx:30,ry:10,fill:'#4db2ff',opacity:.85},g);
-    mk('ellipse',{cx:-8,cy:52,rx:10,ry:4,fill:'#bfe6ff',opacity:.8},g);
+    // 水洼是路面映的天光：低饱和、低透明，不要荧光蓝贴纸
+    mk('ellipse',{cx:0,cy:54,rx:30,ry:10,fill:'#7ec8f7',opacity:.42},g);
+    mk('ellipse',{cx:0,cy:54,rx:30,ry:10,fill:'none',stroke:'#1d2733','stroke-width':2,opacity:.18},g);
+    mk('ellipse',{cx:-8,cy:52,rx:11,ry:3.6,fill:'#eaf7ff',opacity:.5},g);
   } else {
-    mk('ellipse',{cx:0,cy:44,rx:16,ry:12,fill:'#b08968'},g);
-    mk('ellipse',{cx:-12,cy:28,rx:5,ry:12,fill:'#b08968'},g);
-    mk('ellipse',{cx:-2,cy:26,rx:5,ry:12,fill:'#b08968'},g);
-    mk('circle',{cx:-16,cy:40,r:2.4,fill:'#222'},g);
-    mk('circle',{cx:12,cy:52,r:4,fill:'#b08968'},g);
+    // 兔子：侧面像——长耳（带粉内耳）、后腿、圆尾巴，奶油灰跟鹈鹕同色系
+    mk('ellipse',{cx:0,cy:60.5,rx:22,ry:4.6,fill:'#000',opacity:.25},g);
+    mk('ellipse',{cx:-19,cy:19,rx:4,ry:13,fill:'#e8e2d6',transform:'rotate(-14 -19 19)'},g);
+    mk('ellipse',{cx:-12,cy:17,rx:4,ry:14,fill:'#e8e2d6',transform:'rotate(-4 -12 17)'},g);
+    mk('ellipse',{cx:-12.5,cy:19,rx:1.8,ry:9,fill:'#f2b8c6',transform:'rotate(-4 -12 17)'},g);
+    mk('ellipse',{cx:2,cy:44,rx:17,ry:11,fill:'#e8e2d6'},g);
+    mk('circle',{cx:11,cy:47,r:8,fill:'#ddd3c0'},g);
+    mk('ellipse',{cx:9,cy:55,rx:8,ry:3,fill:'#ddd3c0'},g);
+    mk('ellipse',{cx:-9,cy:53,rx:3,ry:5.5,fill:'#ddd3c0'},g);
+    mk('circle',{cx:-14,cy:36,r:8.5,fill:'#e8e2d6'},g);
+    mk('circle',{cx:-17,cy:34,r:1.8,fill:'#222'},g);
+    mk('circle',{cx:18,cy:40,r:4.5,fill:'#fff'},g);
   }
 }
 function spawn(){
@@ -386,7 +400,8 @@ function spawn(){
   for(const o of S.obs){ if(o.lane===lane && o.x > W-260) return; }
   const g = mk('g',{},obsG);
   drawObs(g,type);
-  S.obs.push({g, x:W+60, lane, type, counted:false, scared:false, scareT:0, hop:Math.random()*6.28});
+  const hop0 = Math.random()*6.28;
+  S.obs.push({g, x:W+60, lane, type, counted:false, scared:false, scareT:0, hop:hop0, s:0.92+(hop0%1)*0.16});
 }
 
 /* ---------- fx ---------- */
@@ -584,8 +599,9 @@ function loop(ts){
     }
     o.x -= S.speed*dt;
     const oy = LANES[o.lane];
-    const hopY = o.type==='animal' ? Math.abs(Math.sin(S.t*6+o.hop))*-8 : 0;
-    o.g.setAttribute('transform',`translate(${o.x},${oy+hopY})`);
+    const ph = (S.t*2.1 + o.hop) % 1;
+    const hopY = o.type==='animal' ? -44*ph*(1-ph) : 0;
+    o.g.setAttribute('transform',`translate(${o.x},${oy+hopY}) scale(${o.s})`);
     // 碰撞：按鹈鹕实时位置判定，跟视觉同步
     if(!o.counted && Math.abs(LANES[o.lane]-S.py) < 48 && o.x < PX+46 && o.x > PX-56){
       if(S.t >= S.invUntil){ hitFX(o.x, LANES[o.lane]-10); hit(); }
