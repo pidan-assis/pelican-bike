@@ -49,3 +49,9 @@ Palette selection: 5 named UI colors + scene-derived gradients.
 - Overlays: shared translucent panel (`rgba(8,12,30,.84/.86)`); clean score/distance/best column with `.num` tabular spans; new-record celebration kept (`🎉`).
 - Milestone toast / pause tip: kept existing behavior; styled to chip system.
 - index.html: same tokens (accent button, ink title); same button family; polished active-voice copy.
+
+## 修订（2026-10-28 手工修复轮）
+首版上线后实拍发现三处硬伤，已手工修复（token 与配色不变）：
+- HUD 由横排改为左上单列（英雄分数 → chip 行 → 暂停提示），消除与右上角暂停提示的重叠和右缘裁切。
+- 开始界面打开时，HUD / 触屏按钮 / 跨页链接全部隐藏（CSS :has 按开始遮罩状态切换），不再透过遮罩显形。
+- 开始遮罩改为半透 + 轻模糊，白天场景可辨认，不再误读为夜晚模式；操作说明改为分组键帽行，夜灯提示独立成行并加重；标题去掉与画风不符的 🦤；「看动画版」改成与 chip 同族的玻璃 pill（手机端移到右上角避让控制行）；清掉了首版 CSS 里重复的规则块。

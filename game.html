@@ -12,19 +12,32 @@
   :root { --ink:#1a1d24; --paper:#fdfcf8; --accent:#f5a623; --teal:#2aa198; --asphalt-dark:#2a2d36; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+    #game.shake { animation:none !important; }
   }
-  #hud { position:absolute; top:14px; left:14px; right:14px; display:flex; align-items:flex-start; gap:10px;
+
+  /* ---------- HUD: one column, top-left, owns its corner ---------- */
+  #hud { position:absolute; top:calc(14px + env(safe-area-inset-top)); left:16px; max-width:min(74vw,480px);
+         display:flex; flex-direction:column; gap:8px; align-items:flex-start;
          pointer-events:none; z-index:5; font-family:system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
-         font-variant-numeric:tabular-nums; }
-  #hud .hud-hero { flex:1; min-width:0; }
-  #hud .hud-hero .label { font-size:12px; font-weight:600; letter-spacing:0.08em; color:rgba(255,255,255,.65); text-transform:uppercase; }
-  #hud .hud-hero .value { font-size:32px; font-weight:800; letter-spacing:0.04em; line-height:1; color:#f5a623; text-shadow:0 2px 8px rgba(0,0,0,.45); }
+         font-variant-numeric:tabular-nums; transition:opacity .25s; }
+  #hud .hud-hero .label { font-size:12px; font-weight:600; letter-spacing:0.14em; color:rgba(255,255,255,.75);
+         text-shadow:0 1px 4px rgba(0,0,0,.5); }
+  #hud .hud-hero .value { font-size:36px; font-weight:800; letter-spacing:0.03em; line-height:1.05; color:#f5a623; text-shadow:0 2px 10px rgba(0,0,0,.5); }
   #hud .hud-cluster { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-  #hud .chip { background:rgba(10,16,32,.62); border:1px solid rgba(255,255,255,.12); border-radius:999px; padding:5px 10px;
+  #hud .chip { background:rgba(10,16,32,.62); border:1px solid rgba(255,255,255,.14); border-radius:999px; padding:5px 11px;
              backdrop-filter:blur(6px); color:#fff; font-size:13px; font-weight:600; letter-spacing:0.01em; white-space:nowrap; }
   #hud .chip .num { font-variant-numeric:tabular-nums; font-weight:700; color:#fdfcf8; }
-  #hud .lives { font-family:system-ui,sans-serif; font-variant-numeric:tabular-nums; letter-spacing:2px; font-size:14px; color:#fff; }
-  #controls { position:absolute; bottom:calc(16px + env(safe-area-inset-bottom)); left:0; right:0; display:flex; justify-content:center; gap:10px; z-index:5; flex-wrap:wrap; padding:0 12px; }
+  #hud .lives { letter-spacing:2px; font-size:14px; color:#fff; }
+  #pauseTip { font-size:12px; color:rgba(255,255,255,.65); letter-spacing:0.04em; text-shadow:0 1px 4px rgba(0,0,0,.5); }
+
+  /* start screen up -> in-game chrome fully hidden, no ghosting through the scrim */
+  body:has(#overlay:not(.hidden)) #hud,
+  body:has(#overlay:not(.hidden)) #controls,
+  body:has(#overlay:not(.hidden)) #footerLink { opacity:0; visibility:hidden; }
+
+  /* ---------- touch controls ---------- */
+  #controls { position:absolute; bottom:calc(16px + env(safe-area-inset-bottom)); left:0; right:0;
+              display:flex; justify-content:center; gap:10px; z-index:5; flex-wrap:wrap; padding:0 12px; transition:opacity .25s; }
   .btn { width:60px; height:60px; border-radius:50%; border:2px solid rgba(255,255,255,.55);
          background:rgba(20,30,50,.65); color:#fff; font-size:24px; cursor:pointer;
          display:flex; align-items:center; justify-content:center; backdrop-filter:blur(6px);
@@ -35,23 +48,34 @@
   .btn.small { width:52px; height:52px; font-size:20px; }
   .btn.on { background:rgba(245,166,35,.85); border-color:#ffe9a8; }
   .sep { width:10px; }
+
+  /* ---------- start overlay ---------- */
   #overlay { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-             background:rgba(8,12,30,.84); color:#fff; z-index:10; text-align:center; padding:24px; border-radius:0; }
-  #overlay h1 { font-size:40px; font-weight:800; letter-spacing:0.04em; margin-bottom:10px; line-height:1.2; }
-  #overlay p { font-size:16px; opacity:.88; margin:4px 0; line-height:1.7; color:#fdfcf8; }
-  #overlay .keys { font-size:13px; opacity:.6; color:#fdfcf8; }
-  #startBtn { margin-top:22px; font-size:20px; padding:14px 44px; border-radius:999px; border:none;
+             background:rgba(8,12,30,.58); backdrop-filter:blur(3px); color:#fff; z-index:10; text-align:center; padding:24px; }
+  #overlay h1 { font-size:42px; font-weight:800; letter-spacing:0.05em; line-height:1.2; text-shadow:0 3px 14px rgba(0,0,0,.45); }
+  #overlay .rule { width:46px; height:4px; border-radius:2px; background:#f5a623; margin:14px 0 16px; }
+  #overlay .tagline { font-size:16px; opacity:.92; line-height:1.7; color:#fdfcf8; text-shadow:0 2px 8px rgba(0,0,0,.4); }
+  #overlay .howto { margin-top:18px; display:flex; flex-direction:column; gap:8px; align-items:center; }
+  #overlay .howto .row { display:flex; align-items:center; gap:9px; font-size:14px; color:#fdfcf8; }
+  #overlay .kbd { display:inline-block; min-width:30px; padding:3px 9px; border-radius:8px; text-align:center;
+             background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.35); border-bottom-width:2px;
+             font-size:13px; font-weight:700; letter-spacing:0.03em; }
+  #overlay .night { margin-top:14px; font-size:13.5px; font-weight:600; color:#ffd97a; text-shadow:0 1px 6px rgba(0,0,0,.5); }
+  #startBtn { margin-top:24px; font-size:20px; padding:14px 46px; border-radius:999px; border:none;
               background:#f5a623; color:#1a1d24; font-weight:800; cursor:pointer;
               box-shadow:0 6px 24px rgba(245,166,35,.45); letter-spacing:0.06em;
               transition:transform .08s, background .1s; font-family:system-ui,sans-serif; }
   #startBtn:hover { background:#ffb540; }
   #startBtn:focus-visible { outline:3px solid #2aa198; outline-offset:2px; }
   #startBtn:active { transform:scale(.96); }
+
+  /* ---------- game-over overlay ---------- */
   #over { position:absolute; inset:0; display:none; flex-direction:column; align-items:center; justify-content:center;
           background:rgba(8,12,30,.86); color:#fff; z-index:10; text-align:center; padding:24px; }
   #over h1 { font-size:40px; font-weight:800; margin-bottom:10px; letter-spacing:0.04em; }
   #over .score { font-size:22px; margin:6px 0; color:#fdfcf8; letter-spacing:0.02em; }
   #over .score .num { font-variant-numeric:tabular-nums; font-weight:700; color:#f5a623; }
+  #over .keys { font-size:13px; opacity:.6; color:#fdfcf8; }
   #againBtn { margin-top:20px; font-size:20px; padding:14px 44px; border-radius:999px; border:none;
               background:#2aa198; color:#fff; font-weight:800; cursor:pointer;
               box-shadow:0 6px 24px rgba(42,161,152,.45); letter-spacing:0.06em;
@@ -59,23 +83,28 @@
   #againBtn:hover { background:#35b8b0; }
   #againBtn:focus-visible { outline:3px solid #f5a623; outline-offset:2px; }
   #againBtn:active { transform:scale(.96); }
-  #pauseTip { position:absolute; top:14px; right:14px; color:#fff; font-size:14px; opacity:.75; z-index:5; pointer-events:none; letter-spacing:0.02em; }
+
   #hitFlash { position:absolute; inset:0; pointer-events:none; z-index:6; opacity:0; transition:opacity .12s;
               background:radial-gradient(ellipse at center, rgba(255,60,60,0) 40%, rgba(255,40,40,.55) 100%); }
   #game.shake { animation:shk .28s; }
   @keyframes shk { 0%{transform:translate(0,0)} 20%{transform:translate(-9px,5px)} 40%{transform:translate(7px,-6px)}
                    60%{transform:translate(-5px,-4px)} 80%{transform:translate(3px,2px)} 100%{transform:translate(0,0)} }
   .hidden { display:none !important; }
-  #footerLink { position:absolute; bottom:14px; right:14px; color:#9fd6ff; font-size:13px; opacity:.7; pointer-events:auto; z-index:5; text-decoration:underline; font-family:system-ui,sans-serif; }
-  #footerLink:hover { opacity:1; }
-  @media (prefers-reduced-motion: reduce) { #game.shake { animation:none !important; } }
-  #game.shake { animation:shk .28s; }
-  @keyframes shk { 0%{transform:translate(0,0)} 20%{transform:translate(-9px,5px)} 40%{transform:translate(7px,-6px)}
-                   60%{transform:translate(-5px,-4px)} 80%{transform:translate(3px,2px)} 100%{transform:translate(0,0)} }
-  .hidden { display:none !important; }
-  #footerLink { position:absolute; bottom:12px; right:12px; color:#9fd6ff; font-size:13px;
-    opacity:.7; pointer-events:auto; z-index:5; text-decoration:underline; }
-  #footerLink:hover { opacity:1; }
+
+  /* ---------- cross-link: a real pill, not a forgotten corner note ---------- */
+  #footerLink { position:absolute; bottom:calc(16px + env(safe-area-inset-bottom)); right:16px; z-index:5;
+    padding:8px 15px; border-radius:999px; background:rgba(10,16,32,.55); border:1px solid rgba(255,255,255,.28);
+    backdrop-filter:blur(6px); color:#fff; font-size:13px; font-weight:600; text-decoration:none;
+    font-family:system-ui,sans-serif; transition:opacity .25s, background .1s; }
+  #footerLink:hover { background:rgba(10,16,32,.8); }
+  #footerLink:focus-visible { outline:3px solid #2aa198; outline-offset:2px; }
+
+  @media (max-width:560px) {
+    #hud { max-width:66vw; }
+    #hud .hud-hero .value { font-size:30px; }
+    #hud .chip { font-size:12px; padding:4px 9px; }
+    #footerLink { bottom:auto; top:calc(12px + env(safe-area-inset-top)); right:12px; }
+  }
 </style>
 </head>
 <body>
@@ -178,29 +207,34 @@
     </div>
     <div class="hud-cluster">
       <div class="chip">🏁 <span class="num" id="dist">0</span> m</div>
-      <div class="chip">✦ <span class="num" id="dodge">0</span></div>
+      <div class="chip">⭐ <span class="num" id="dodge">0</span></div>
       <div class="chip"><span id="lives" class="lives">❤❤❤</span></div>
       <div class="chip">🏆 最佳 <span class="num" id="best">0</span></div>
     </div>
+    <div id="pauseTip">空格暂停</div>
   </div>
-  <div id="pauseTip">空格暂停</div>
   <div id="hitFlash"></div>
 
   <div id="controls">
-    <button class="btn" id="btnUp">⬆</button>
-    <button class="btn" id="btnDown">⬇</button>
+    <button class="btn" id="btnUp" aria-label="向上换车道">⬆</button>
+    <button class="btn" id="btnDown" aria-label="向下换车道">⬇</button>
     <div class="sep"></div>
-    <button class="btn small" id="btnLamp">💡</button>
-    <button class="btn small" id="btnBell">🔔</button>
+    <button class="btn small" id="btnLamp" aria-label="开关车灯">💡</button>
+    <button class="btn small" id="btnBell" aria-label="摇铃">🔔</button>
     <div class="sep"></div>
-    <button class="btn small" id="btnDay">🌙</button>
-    <button class="btn small" id="btnPause">⏸</button>
+    <button class="btn small" id="btnDay" aria-label="切换昼夜">🌙</button>
+    <button class="btn small" id="btnPause" aria-label="暂停">⏸</button>
   </div>
 
   <div id="overlay">
-    <h1>鹈鹕骑单车 🦤🚲</h1>
-    <p>帮鹈鹕一路躲开障碍，骑得越远越好。</p>
-    <p class="keys">⬆ ⬇ / W S 换车道 &nbsp;·&nbsp; L 开灯 &nbsp;·&nbsp; B 铃声（惊走小动物）<br>夜里不开灯会看不清路。</p>
+    <h1>鹈鹕骑单车</h1>
+    <div class="rule"></div>
+    <p class="tagline">帮鹈鹕一路躲开障碍，骑得越远越好。</p>
+    <div class="howto">
+      <div class="row"><span><span class="kbd">↑</span> <span class="kbd">↓</span> <span class="kbd">W</span> <span class="kbd">S</span></span><span>换车道</span></div>
+      <div class="row"><span><span class="kbd">L</span></span><span>开车灯</span><span><span class="kbd">B</span></span><span>摇铃，惊走小动物</span></div>
+    </div>
+    <p class="night">💡 夜里不开灯，会看不清路。</p>
     <button id="startBtn">出发</button>
   </div>
 
